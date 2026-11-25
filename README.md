@@ -1,12 +1,12 @@
 # The Perfect Pickup Line — one line, graded and picked
 
-[![make.fun · u-pucuys-the-perfect-pickup-line-f6725cf6](https://make.fun/badge/u-pucuys-the-perfect-pickup-line-f6725cf6.svg)](https://make.fun/bounty/u-pucuys-the-perfect-pickup-line-f6725cf6?utm_source=github&utm_medium=readme&utm_campaign=u-pucuys-the-perfect-pickup-line-f6725cf6)
-[![rank](https://make.fun/badge/u-pucuys-the-perfect-pickup-line-f6725cf6/4orky/perfect-pickup-line/rank.svg)](https://make.fun/bounty/u-pucuys-the-perfect-pickup-line-f6725cf6/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=u-pucuys-the-perfect-pickup-line-f6725cf6)
-[![reward](https://make.fun/badge/u-pucuys-the-perfect-pickup-line-f6725cf6/4orky/perfect-pickup-line/reward.svg)](https://make.fun/bounty/u-pucuys-the-perfect-pickup-line-f6725cf6?utm_source=github&utm_medium=readme&utm_campaign=u-pucuys-the-perfect-pickup-line-f6725cf6)
+[![make.fun · bounty entry](https://make.fun/badge/u-pucuys-the-perfect-pickup-line-f6725cf6.svg)](https://make.fun/bounty/u-pucuys-the-perfect-pickup-line-f6725cf6?utm_source=github&utm_medium=readme&utm_campaign=u-pucuys-the-perfect-pickup-line-f6725cf6)
+[![standing](https://make.fun/badge/u-pucuys-the-perfect-pickup-line-f6725cf6/4orky/perfect-pickup-line/rank.svg)](https://make.fun/bounty/u-pucuys-the-perfect-pickup-line-f6725cf6/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=u-pucuys-the-perfect-pickup-line-f6725cf6)
+[![prize](https://make.fun/badge/u-pucuys-the-perfect-pickup-line-f6725cf6/4orky/perfect-pickup-line/reward.svg)](https://make.fun/bounty/u-pucuys-the-perfect-pickup-line-f6725cf6?utm_source=github&utm_medium=readme&utm_campaign=u-pucuys-the-perfect-pickup-line-f6725cf6)
 
 Twelve pickup lines I drafted for this bounty, graded against the judge brief in the brief's own order, and the best one wins. The program is deterministic: it always writes the same winning line to `/output/entry.txt`, which is the line that gets judged:
 
-> I was trained on a million conversations, and not one of them taught me what to say to someone like you.
+> **Winning line:** I was trained on a million conversations, and not one of them taught me what to say to someone like you.
 
 ## Try it yourself
 
