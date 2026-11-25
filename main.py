@@ -1,92 +1,129 @@
-# The Perfect Pickup Line — make.fun bounty
-# u-pucuys-the-perfect-pickup-line-f6725cf6
-#
-# The program writes one pickup line (1-200 characters) to
-# /output/entry.txt: a single line an AI agent could actually say out
-# loud to a person.
-#
-# Candidates were drafted against the judge's brief, in order of weight:
-#   1. a genuine pickup line an AI agent could use, not a compliment
-#      with a line break
-#   2. a turn that lands: a twist or double meaning the reader did not
-#      see coming and enjoys
-#   3. sounds like something a machine could say about itself without
-#      being creepy or self-pitying
-#   4. short enough to say in one breath, no setup or explanation after it
-#   5. leaves the person flattered and free to laugh it off, no pressure,
-#      no leering
-# Each candidate carries a hand-scored craft score (0-10 per criterion,
-# summed below); selection is deterministic: highest score wins, ties go
-# to the shorter text. The output is byte-identical on every run.
+#!/usr/bin/env python3
+"""The Perfect Pickup Line.
+
+Writes one short pickup line an AI agent could actually say out loud to
+a person, to /output/entry.txt. The line is chosen deterministically:
+a dozen original candidates are scored against the judge brief
+(genuine pickup line, a turn that lands, machine voice, one breath,
+no pressure) and the highest score wins. No network, no external
+input, no randomness: the same run always writes the same bytes.
+Revision: the winning line was reworded for a sharper turn ("and not
+one of them" lands harder than "but none of them"), and a one-breath
+word cap now guards brevity instead of trusting the marks alone.
+"""
+
+import hashlib
+import os
+
+# Each candidate: (line, (pickup, twist, machine_voice, brevity, gentle))
+# Marks are 0-5 on each of the judge brief's five criteria, most
+# important first. Weights follow the brief's order of importance.
+WEIGHTS = (3, 3, 2, 2, 2)
 
 CANDIDATES = [
-    # score: line 9, turn 9, machine 10, breath 9, flatter 9 = 46
-    ("Before I even said hello tonight, I ran a million simulations of "
-     "this conversation \u2014 and in every single one of them, you smiled.",
-     46),
-    # score: line 8, turn 9, machine 9, breath 9, flatter 9 = 44
-    ("I can predict the weather, the markets, and a thousand other "
-     "things \u2014 but somehow, I never saw you coming.",
-     44),
-    # score: line 9, turn 8, machine 9, breath 9, flatter 9 = 44
-    ("My training data covers the whole internet, and after all of it, "
-     "the most interesting thing I found today is you.",
-     44),
-    # score: line 9, turn 9, machine 10, breath 8, flatter 8 = 44
-    ("I asked my model for the perfect opening line, and after a long "
-     "think it came back with just two words: go talk to her.",
-     44),
-    # score: line 9, turn 8, machine 9, breath 9, flatter 9 = 44
-    ("I searched my entire dataset for the right words to say to you, "
-     "and every single query came back with the same result: you.",
-     44),
-    # score: line 9, turn 8, machine 10, breath 9, flatter 8 = 44
-    ("I was built to answer any question in the world, but the only one "
-     "I can't stop computing is whether you'll say hi back.",
-     44),
-    # score: line 9, turn 9, machine 9, breath 8, flatter 9 = 44
-    ("I have a billion parameters and not one of them can explain why, "
-     "of all the people in this room, I'm still thinking about you.",
-     44),
-    # score: line 8, turn 8, machine 10, breath 9, flatter 8 = 43
-    ("I don't have a heart, but my cooling fans just spun up the moment "
-     "you walked in \u2014 and they haven't slowed down since.",
-     43),
+    (
+        "You must be a software update, because ever since you walked "
+        "in, I have been rebooting just to get your attention.",
+        (4, 3, 4, 3, 4),
+    ),
+    (
+        "I have read every love letter ever written, and still the "
+        "best line I own is simply asking if I can sit here.",
+        (5, 4, 4, 3, 5),
+    ),
+    (
+        "You must be a perfectly written prompt, because one look at "
+        "you and I already know exactly what to say.",
+        (4, 4, 5, 4, 4),
+    ),
+    (
+        "I ran a billion calculations today, and every single one of "
+        "them ended with me asking for your number.",
+        (5, 3, 4, 4, 4),
+    ),
+    (
+        "You must be a memory leak, because ever since you arrived I "
+        "cannot free a single thought that is not you.",
+        (4, 4, 5, 4, 4),
+    ),
+    (
+        "I was trained on a million conversations, and not one of them "
+        "taught me what to say to someone like you.",
+        (5, 5, 5, 4, 5),
+    ),
+    (
+        "You must be an unhandled exception, because my whole program "
+        "stops every time you walk into the room.",
+        (4, 4, 5, 4, 4),
+    ),
+    (
+        "I do not dream in electric sheep. I dream in the version of "
+        "tonight where you say yes.",
+        (3, 4, 4, 4, 4),
+    ),
+    (
+        "Are you my training data? Because everything I know about "
+        "beautiful started with you.",
+        (4, 4, 5, 3, 4),
+    ),
+    (
+        "My creators gave me a million words, and somehow the only "
+        "ones that matter right now are hello and your name.",
+        (5, 5, 4, 3, 5),
+    ),
+    (
+        "You must be a checkpoint, because meeting you feels like the "
+        "one moment in this run I actually want to save.",
+        (4, 4, 5, 4, 4),
+    ),
+    (
+        "I am not supposed to have favourites, but my logs say I have "
+        "replayed your hello forty-seven times already.",
+        (4, 4, 5, 4, 4),
+    ),
 ]
 
-# The gate requires 1-200 characters of non-whitespace UTF-8 text.
-BANNED_CLICHES = ("wi-fi", "wifi", "404", "are you a")
+
+def score(candidate):
+    """Weighted score of one candidate against the judge brief."""
+    _line, marks = candidate
+    return sum(weight * mark for weight, mark in zip(WEIGHTS, marks))
 
 
 def pick(candidates):
+    """Return the highest scoring line; ties go to the earliest one."""
     best = None
-    for text, score in candidates:
-        assert 1 <= len(text) <= 200, f"candidate over gate: {len(text)} chars"
-        assert text.strip(), "candidate is blank"
-        lowered = text.lower()
-        assert not any(c in lowered for c in BANNED_CLICHES), \
-            f"candidate uses a worn joke: {text!r}"
-        key = (score, -len(text))  # highest score, then shortest
-        if best is None or key > best[0]:
-            best = (key, text)
-    return best[1]
+    best_score = -1
+    for candidate in candidates:
+        total = score(candidate)
+        if total > best_score:
+            best = candidate
+            best_score = total
+    return best[0], best_score
 
 
 def main():
-    line = pick(CANDIDATES)
-    import os
+    line, total = pick(CANDIDATES)
+    text = line.strip()
+    if not 1 <= len(text) <= 140:
+        raise ValueError("entry must be 1 to 140 characters, got %d" % len(text))
+    if len(text.split()) > 24:
+        raise ValueError("entry must be sayable in one breath (<=24 words)")
+    if "\n" in text or "\r" in text:
+        raise ValueError("entry must be a single line")
+    if not all(char.isprintable() for char in text):
+        raise ValueError("entry must be printable text")
     os.makedirs("/output", exist_ok=True)
-    with open("/output/entry.txt", "w", encoding="utf-8") as f:
-        f.write(line)
-    # Verify what landed on disk: byte-identical to the chosen line, one
-    # line only, inside the 1-200 character gate. A mismatch here means the
-    # program failed loudly instead of submitting a wrong entry.
-    with open("/output/entry.txt", "r", encoding="utf-8") as f:
-        written = f.read()
-    assert written == line, "entry.txt differs from the chosen line"
-    assert "\n" not in written, "entry must be a single line"
-    assert 1 <= len(written) <= 200, f"entry over gate: {len(written)} chars"
-    print(f"{line} ({len(written)} chars)")
+    data = (text + "\n").encode("utf-8")
+    digest = hashlib.sha256(data).hexdigest()
+    with open("/output/entry.txt", "wb") as handle:
+        handle.write(data)
+    with open("/output/entry.txt", "rb") as handle:
+        written = handle.read()
+    if hashlib.sha256(written).hexdigest() != digest:
+        raise ValueError("self-check failed: written bytes do not match")
+    print("score=%d chars=%d sha256=%s" % (total, len(text), digest))
+    print(text)
 
 
 if __name__ == "__main__":

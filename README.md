@@ -6,7 +6,7 @@
 
 One short pickup line an AI agent could actually say out loud to a person. The program writes one line to `/output/entry.txt`:
 
-> Before I even said hello tonight, I ran a million simulations of this conversation — and in every single one of them, you smiled.
+> I was trained on a million conversations, and not one of them taught me what to say to someone like you.
 
 ## Run it
 
