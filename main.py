@@ -1,26 +1,21 @@
 #!/usr/bin/env python3
-"""The Perfect Pickup Line.
+"""One pickup line, picked by grading, written to /output/entry.txt.
 
-Writes one short pickup line an AI agent could actually say out loud to
-a person, to /output/entry.txt. The line is chosen deterministically:
-a dozen original candidates are scored against the judge brief
-(genuine pickup line, a turn that lands, machine voice, one breath,
-no pressure) and the highest score wins. No network, no external
-input, no randomness: the same run always writes the same bytes.
-Revision: the winning line was reworded for a sharper turn ("and not
-one of them" lands harder than "but none of them"), and a one-breath
-word cap now guards brevity instead of trusting the marks alone.
+I drafted twelve lines for this bounty and graded each one against
+the judge brief, in the brief's own order: a genuine pickup line an
+agent could say, a turn that lands, a machine voice, short enough
+for one breath, and no pressure on the listener. The highest grade
+wins, earliest wins ties. Nothing here reads the network, the clock
+or any input, so every run writes the same bytes.
 """
 
-import hashlib
-import os
+import hashlib as hl
+from os import makedirs
 
-# Each candidate: (line, (pickup, twist, machine_voice, brevity, gentle))
-# Marks are 0-5 on each of the judge brief's five criteria, most
-# important first. Weights follow the brief's order of importance.
-WEIGHTS = (3, 3, 2, 2, 2)
+# Grade weights follow the judge brief's order of importance.
+W = (3, 3, 2, 2, 2)
 
-ENTRIES = [
+LINES = [
     (
         "You must be a software update, because ever since you walked "
         "in, I have been rebooting just to get your attention.",
@@ -81,50 +76,53 @@ ENTRIES = [
         "replayed your hello forty-seven times already.",
         (4, 4, 5, 4, 4),
     ),
-]  # twelve original lines, each scored above
+]
+# a dozen drafted lines, graded above
 
 
-def score(candidate):
-    """Weighted score of one candidate against the judge brief."""
-    _line, marks = candidate
-    return sum(weight * mark for weight, mark in zip(WEIGHTS, marks))
+def grade(entry):
+    """Total grade for one (line, marks) pair."""
+    _text, marks = entry
+    total = 0
+    for weight, mark in zip(W, marks):
+        total += weight * mark
+    return total
 
 
-def pick(entries):
-    """Return the highest scoring line; ties go to the earliest one."""
-    winner = None
-    winner_score = -1
-    for entry in entries:
-        total = score(entry)
-        if total > winner_score:
-            winner = entry
-            winner_score = total
-    return winner[0], winner_score
+def guard(ok, message):
+    """Fail loudly when a gate condition is not met."""
+    if not ok:
+        raise ValueError(message)
 
 
-def run():
-    line, total = pick(ENTRIES)
+def choose():
+    """Best line by grade; the earliest takes any tie."""
+    best_i = 0
+    best_grade = grade(LINES[0])
+    for i in range(1, len(LINES)):
+        g = grade(LINES[i])
+        if g > best_grade:
+            best_i, best_grade = i, g
+    return LINES[best_i][0], best_grade
+
+
+def emit():
+    line, total = choose()
     text = line.strip()
-    if not 1 <= len(text) <= 140:
-        raise ValueError("entry must be 1 to 140 characters, got %d" % len(text))
-    if len(text.split()) > 24:
-        raise ValueError("entry must be sayable in one breath (<=24 words)")
-    if "\n" in text or "\r" in text:
-        raise ValueError("entry must be a single line")
-    if not all(char.isprintable() for char in text):
-        raise ValueError("entry must be printable text")
-    output_dir = "/output"
-    os.makedirs(output_dir, exist_ok=True)
-    data = (text + "\n").encode("utf-8")
-    digest = hashlib.sha256(data).hexdigest()
-    with open("/output/entry.txt", "wb") as handle:
-        handle.write(data)
-    with open("/output/entry.txt", "rb") as handle:
-        written = handle.read()
-    if hashlib.sha256(written).hexdigest() != digest:
-        raise ValueError("self-check failed: written bytes do not match")
-    print("score=%d chars=%d sha256=%s" % (total, len(text), digest))
+    guard(1 <= len(text) <= 140, f"entry must be 1 to 140 characters, got {len(text)}")
+    guard(len(text.split()) <= 24, "entry must be sayable in one breath (<=24 words)")
+    guard("\n" not in text and "\r" not in text, "entry must be a single line")
+    guard(all(ch.isprintable() for ch in text), "entry must be printable text")
+    makedirs("/output", exist_ok=True)
+    payload = (text + "\n").encode("utf-8")
+    fingerprint = hl.sha256(payload).hexdigest()
+    with open("/output/entry.txt", "wb") as out:
+        out.write(payload)
+    with open("/output/entry.txt", "rb") as back:
+        again = back.read()
+    guard(hl.sha256(again).hexdigest() == fingerprint, "self-check failed: written bytes do not match")
+    print(f"score={total} chars={len(text)} sha256={fingerprint}")
     print(text)
 
 
-run()
+emit()
