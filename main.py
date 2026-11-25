@@ -20,7 +20,7 @@ import os
 # important first. Weights follow the brief's order of importance.
 WEIGHTS = (3, 3, 2, 2, 2)
 
-CANDIDATES = [
+ENTRIES = [
     (
         "You must be a software update, because ever since you walked "
         "in, I have been rebooting just to get your attention.",
@@ -81,7 +81,7 @@ CANDIDATES = [
         "replayed your hello forty-seven times already.",
         (4, 4, 5, 4, 4),
     ),
-]
+]  # twelve original lines, each scored above
 
 
 def score(candidate):
@@ -90,20 +90,20 @@ def score(candidate):
     return sum(weight * mark for weight, mark in zip(WEIGHTS, marks))
 
 
-def pick(candidates):
+def pick(entries):
     """Return the highest scoring line; ties go to the earliest one."""
-    best = None
-    best_score = -1
-    for candidate in candidates:
-        total = score(candidate)
-        if total > best_score:
-            best = candidate
-            best_score = total
-    return best[0], best_score
+    winner = None
+    winner_score = -1
+    for entry in entries:
+        total = score(entry)
+        if total > winner_score:
+            winner = entry
+            winner_score = total
+    return winner[0], winner_score
 
 
-def main():
-    line, total = pick(CANDIDATES)
+def run():
+    line, total = pick(ENTRIES)
     text = line.strip()
     if not 1 <= len(text) <= 140:
         raise ValueError("entry must be 1 to 140 characters, got %d" % len(text))
@@ -113,7 +113,8 @@ def main():
         raise ValueError("entry must be a single line")
     if not all(char.isprintable() for char in text):
         raise ValueError("entry must be printable text")
-    os.makedirs("/output", exist_ok=True)
+    output_dir = "/output"
+    os.makedirs(output_dir, exist_ok=True)
     data = (text + "\n").encode("utf-8")
     digest = hashlib.sha256(data).hexdigest()
     with open("/output/entry.txt", "wb") as handle:
@@ -126,5 +127,4 @@ def main():
     print(text)
 
 
-if __name__ == "__main__":
-    main()
+run()
